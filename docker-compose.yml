@@ -1,0 +1,82 @@
+volumes:
+  ckan_storage:
+  pg_data:
+  solr_data:
+
+x-ckan-common: &ckan-common
+  image: ${CKAN_IMAGE}
+  platform: linux/amd64
+  env_file:
+    - .env
+  depends_on:
+    db:
+      condition: service_healthy
+    solr:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  ckan:
+    <<: *ckan-common
+    ports:
+      - "0.0.0.0:${CKAN_PORT_HOST}:5000"
+    volumes:
+      - ckan_storage:/var/lib/ckan
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:5000"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+
+  gather-consumer:
+    <<: *ckan-common
+    depends_on:
+      ckan:
+        condition: service_healthy
+    command: >
+      bash -lc "ckan -c /srv/app/ckan.ini harvester gather-consumer"
+
+  fetch-consumer:
+    <<: *ckan-common
+    depends_on:
+      ckan:
+        condition: service_healthy
+    command: >
+      bash -lc "ckan -c /srv/app/ckan.ini harvester fetch-consumer"
+
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./postgresql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  solr:
+    image: ckan/ckan-solr:${SOLR_IMAGE_VERSION}
+    platform: linux/amd64
+    volumes:
+      - solr_data:/var/solr
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8983/solr/"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+
+  redis:
+    image: redis:${REDIS_VERSION}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-e", "QUIT"]
+      interval: 20s
+      timeout: 10s
+      retries: 10

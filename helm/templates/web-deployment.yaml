@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "seamware-ckan.webName" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ .Values.web.replicaCount }}
+  strategy:
+    {{- toYaml .Values.web.strategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "seamware-ckan.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        {{- include "seamware-ckan.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: web
+      {{- with .Values.web.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "seamware-ckan.imagePullSecrets" . | nindent 6 }}
+      initContainers:
+        - name: wait-for-dependencies
+          image: {{ printf "%s:%s" .Values.busyboxImage.repository .Values.busyboxImage.tag | quote }}
+          imagePullPolicy: {{ .Values.busyboxImage.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              until nc -z {{ include "seamware-ckan.postgresql.host" . }} {{ .Values.postgresql.port }}; do sleep 2; done
+              until nc -z {{ include "seamware-ckan.redis.host" . }} {{ .Values.redis.port }}; do sleep 2; done
+              until wget -qO /dev/null {{ include "seamware-ckan.solrURL" . }}/schema/name?wt=json; do sleep 2; done
+      containers:
+        - name: ckan
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "seamware-ckan.appConfigMapName" . }}
+            - secretRef:
+                name: {{ include "seamware-ckan.appSecretName" . }}
+          ports:
+            - name: http
+              containerPort: 5000
+          {{- if .Values.web.storage.enabled }}
+          volumeMounts:
+            - name: ckan-storage
+              mountPath: {{ .Values.web.storage.mountPath | quote }}
+          {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.web.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.web.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.web.resources | nindent 12 }}
+      {{- if .Values.web.storage.enabled }}
+      volumes:
+        - name: ckan-storage
+          persistentVolumeClaim:
+            claimName: {{ include "seamware-ckan.webStorageClaimName" . }}
+      {{- end }}

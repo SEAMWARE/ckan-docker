@@ -1,0 +1,102 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "seamware-ckan.postgresql.name" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "seamware-ckan.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- include "seamware-ckan.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+      {{- with .Values.postgresql.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: postgresql
+          image: {{ printf "%s:%s" .Values.postgresql.image.repository .Values.postgresql.image.tag | quote }}
+          imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.auth.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "seamware-ckan.appSecretName" . }}
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.auth.database | quote }}
+            - name: CKAN_DB_USER
+              value: {{ .Values.ckan.database.user | quote }}
+            - name: CKAN_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "seamware-ckan.appSecretName" . }}
+                  key: CKAN_DB_PASSWORD
+            - name: CKAN_DB
+              value: {{ .Values.ckan.database.name | quote }}
+            - name: DATASTORE_READONLY_USER
+              value: {{ .Values.ckan.database.datastoreReadOnlyUser | quote }}
+            - name: DATASTORE_READONLY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "seamware-ckan.appSecretName" . }}
+                  key: DATASTORE_READONLY_PASSWORD
+            - name: DATASTORE_DB
+              value: {{ .Values.ckan.database.datastoreName | quote }}
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -ec
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -ec
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.postgresql.resources | nindent 12 }}
+      volumes:
+        - name: initdb
+          configMap:
+            name: {{ include "seamware-ckan.postgresqlInitConfigMapName" . }}
+            defaultMode: 0755
+        - name: data
+          {{- if .Values.postgresql.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "seamware-ckan.postgresqlStorageClaimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

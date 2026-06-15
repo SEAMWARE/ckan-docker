@@ -1,0 +1,14 @@
+ckan:
+  siteUrl: http://127.0.0.1:5001
+
+web:
+  storage:
+    storageClass: local-path
+
+postgresql:
+  persistence:
+    storageClass: local-path
+
+solr:
+  persistence:
+    storageClass: local-path

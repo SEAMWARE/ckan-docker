@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "seamware-ckan.appConfigMapName" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+data:
+  TZ: {{ .Values.timezone | quote }}
+  CKAN_SITE_ID: {{ .Values.ckan.siteId | quote }}
+  CKAN_SITE_URL: {{ .Values.ckan.siteUrl | quote }}
+  CKAN_SOLR_URL: {{ include "seamware-ckan.solrURL" . | quote }}
+  CKAN_REDIS_URL: {{ include "seamware-ckan.redisURL" . | quote }}
+  CKAN_STORAGE_PATH: {{ .Values.web.storage.mountPath | quote }}
+  CKAN_MAX_UPLOAD_SIZE_MB: {{ .Values.ckan.maxUploadSizeMb | quote }}
+  CKAN_SYSADMIN_NAME: {{ .Values.ckan.sysadmin.name | quote }}
+  CKAN_SYSADMIN_EMAIL: {{ .Values.ckan.sysadmin.email | quote }}
+  CKAN_SMTP_SERVER: {{ .Values.ckan.smtp.server | quote }}
+  CKAN_SMTP_STARTTLS: {{ .Values.ckan.smtp.starttls | quote }}
+  CKAN_SMTP_USER: {{ .Values.ckan.smtp.user | quote }}
+  CKAN_SMTP_MAIL_FROM: {{ .Values.ckan.smtp.mailFrom | quote }}
+  CKAN__PLUGINS: {{ .Values.ckan.plugins | quote }}
+  CKAN___SCHEMING__DATASET_SCHEMAS: {{ .Values.ckan.scheming.datasetSchemas | quote }}
+  CKAN___SCHEMING__PRESETS: {{ .Values.ckan.scheming.presets | quote }}
+  CKAN__HARVEST__MQ__TYPE: "redis"
+  CKAN__HARVEST__MQ__HOSTNAME: {{ include "seamware-ckan.redis.host" . | quote }}
+  CKAN__HARVEST__MQ__PORT: {{ .Values.redis.port | quote }}
+  CKAN__HARVEST__MQ__REDIS_DB: {{ .Values.redis.db | quote }}
+  CKANEXT_DSIF_CATALOG_ID: {{ .Values.ckan.dsif.catalogId | quote }}
+  CKANEXT_DSIF_SECTOR: {{ .Values.ckan.dsif.sector | quote }}
+  CKANEXT_DSIF_TITLE: {{ .Values.ckan.dsif.title | quote }}
+  CKANEXT_DSIF_DESCRIPTION: {{ .Values.ckan.dsif.description | quote }}
+  CKANEXT_OIDC4VC_CLIENT_ID: {{ .Values.ckan.oidc4vc.clientId | quote }}
+  CKANEXT_OIDC4VC_REDIRECT_URI: {{ .Values.ckan.oidc4vc.redirectUri | quote }}
+  CKANEXT_OIDC4VC_SCOPES: {{ .Values.ckan.oidc4vc.scopes | quote }}
+  CKANEXT_OIDC4VC_ISSUER: {{ .Values.ckan.oidc4vc.issuer | quote }}
+  CKANEXT_OIDC4VC_EMAIL_CLAIM: {{ .Values.ckan.oidc4vc.emailClaim | quote }}
+  CKANEXT_OIDC4VC_FIRST_NAME_CLAIM: {{ .Values.ckan.oidc4vc.firstNameClaim | quote }}
+  CKANEXT_OIDC4VC_LAST_NAME_CLAIM: {{ .Values.ckan.oidc4vc.lastNameClaim | quote }}
+  CKANEXT_OIDC4VC_ORG_ID_CLAIM: {{ .Values.ckan.oidc4vc.orgIdClaim | quote }}
+  CKANEXT_OIDC4VC_ROLES_CLAIM: {{ .Values.ckan.oidc4vc.rolesClaim | quote }}
+  CKANEXT_OIDC4VC_EDITOR_ROLE: {{ .Values.ckan.oidc4vc.editorRole | quote }}
+  CKANEXT_OIDC4VC_ORG_ADMIN_ROLE: {{ .Values.ckan.oidc4vc.orgAdminRole | quote }}
+  CKANEXT_TMFORUM_OWNER_ROLE: {{ .Values.ckan.tmforum.ownerRole | quote }}
+  POSTGRES_USER: {{ .Values.postgresql.auth.username | quote }}
+  POSTGRES_DB: {{ .Values.postgresql.auth.database | quote }}
+  CKAN_DB_USER: {{ .Values.ckan.database.user | quote }}
+  CKAN_DB: {{ .Values.ckan.database.name | quote }}
+  DATASTORE_READONLY_USER: {{ .Values.ckan.database.datastoreReadOnlyUser | quote }}
+  DATASTORE_DB: {{ .Values.ckan.database.datastoreName | quote }}
+  {{- range $key, $value := .Values.ckan.extraEnv }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+---
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "seamware-ckan.postgresqlInitConfigMapName" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+data:
+  10_create_ckandb.sql: |
+    CREATE ROLE "{{ .Values.ckan.database.user }}" NOSUPERUSER CREATEDB CREATEROLE LOGIN PASSWORD '{{ .Values.ckan.database.password }}';
+    CREATE DATABASE "{{ .Values.ckan.database.name }}" OWNER "{{ .Values.ckan.database.user }}" ENCODING 'utf-8';
+  20_create_datastore.sql: |
+    CREATE ROLE "{{ .Values.ckan.database.datastoreReadOnlyUser }}" NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ .Values.ckan.database.datastoreReadOnlyPassword }}';
+    CREATE DATABASE "{{ .Values.ckan.database.datastoreName }}" OWNER "{{ .Values.ckan.database.user }}" ENCODING 'utf-8';
+{{- end }}

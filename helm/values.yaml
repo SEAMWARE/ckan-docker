@@ -1,0 +1,173 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: seamware/ckan
+  tag: 2.11-custom
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+busyboxImage:
+  repository: busybox
+  tag: "1.36"
+  pullPolicy: IfNotPresent
+
+timezone: UTC
+
+web:
+  replicaCount: 1
+  strategy:
+    type: Recreate
+  podAnnotations: {}
+  resources: {}
+  storage:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    mountPath: /var/lib/ckan
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 90
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 6
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 6
+
+workers:
+  gatherConsumer:
+    replicaCount: 1
+    podAnnotations: {}
+    resources: {}
+  fetchConsumer:
+    replicaCount: 1
+    podAnnotations: {}
+    resources: {}
+
+service:
+  type: ClusterIP
+  port: 5000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ckan.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+ckan:
+  siteId: default
+  siteUrl: http://127.0.0.1:5000
+  maxUploadSizeMb: 100
+  plugins: image_view text_view datatables_view datastore scheming_datasets scheming_groups scheming_organizations harvest dcat oidc4vc tmforum dsif envvars
+  scheming:
+    datasetSchemas: ckanext.dcat.schemas:dcat_ap_recommended.yaml
+    presets: ckanext.scheming:presets.json ckanext.dcat.schemas:presets.yaml
+  sysadmin:
+    name: ckan_admin
+    password: test1234
+    email: your_email@example.com
+  security:
+    secretKey: CHANGE_ME
+    wtfCsrfSecretKey: CHANGE_ME
+    beakerSessionSecret: CHANGE_ME
+    apiTokenJwtEncodeSecret: string:CHANGE_ME
+    apiTokenJwtDecodeSecret: string:CHANGE_ME
+  smtp:
+    server: smtp.corporateict.domain:25
+    starttls: "True"
+    user: user
+    password: pass
+    mailFrom: ckan@localhost
+  database:
+    name: ckandb
+    user: ckandbuser
+    password: ckandbpassword
+    datastoreName: datastore
+    datastoreReadOnlyUser: datastore_ro
+    datastoreReadOnlyPassword: datastore
+  dsif:
+    catalogId: ic-001
+    sector: smart-cities
+    title: Independent Catalog of Smart City Data
+    description: This catalog contains datasets related to smart cities.
+  oidc4vc:
+    clientId: did:web:did-producer.seamware.io:did
+    clientSecret: CHANGE_ME
+    redirectUri: /auth/oidc4vc/callback
+    scopes: openid learcredential
+    issuer: https://verifier.seamware.io
+    emailClaim: credentialSubject.email
+    firstNameClaim: credentialSubject.firstName
+    lastNameClaim: credentialSubject.lastName
+    orgIdClaim: issuer
+    rolesClaim: credentialSubject.roles
+    editorRole: ckan:editor
+    orgAdminRole: ckan:admin
+  tmforum:
+    ownerRole: Seller
+  extraEnv: {}
+  extraSecretEnv: {}
+
+postgresql:
+  enabled: true
+  host: ""
+  port: 5432
+  image:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  auth:
+    username: postgres
+    password: postgres
+    database: postgres
+  podAnnotations: {}
+  resources: {}
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 8Gi
+
+solr:
+  enabled: true
+  host: ""
+  port: 8983
+  core: ckan
+  image:
+    repository: ckan/ckan-solr
+    tag: 2.11-solr9
+    pullPolicy: IfNotPresent
+  podAnnotations: {}
+  resources: {}
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 8Gi
+
+redis:
+  enabled: true
+  host: ""
+  port: 6379
+  db: 1
+  image:
+    repository: redis
+    tag: "6"
+    pullPolicy: IfNotPresent
+  podAnnotations: {}
+  resources: {}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: seamware-ckan
+description: Helm chart for the SEAMWARE custom CKAN stack
+type: application
+version: 0.1.0
+appVersion: "2.11-custom"

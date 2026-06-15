@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-gather-consumer" (include "seamware-ckan.fullname" .) | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gather-consumer
+spec:
+  replicas: {{ .Values.workers.gatherConsumer.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "seamware-ckan.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: gather-consumer
+  template:
+    metadata:
+      labels:
+        {{- include "seamware-ckan.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: gather-consumer
+      {{- with .Values.workers.gatherConsumer.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "seamware-ckan.imagePullSecrets" . | nindent 6 }}
+      initContainers:
+        - name: wait-for-ckan
+          image: {{ printf "%s:%s" .Values.busyboxImage.repository .Values.busyboxImage.tag | quote }}
+          imagePullPolicy: {{ .Values.busyboxImage.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              until wget -qO /dev/null http://{{ include "seamware-ckan.webName" . }}:{{ .Values.service.port }}/; do sleep 2; done
+      containers:
+        - name: gather-consumer
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - -lc
+            - ckan -c /srv/app/ckan.ini harvester gather-consumer
+          envFrom:
+            - configMapRef:
+                name: {{ include "seamware-ckan.appConfigMapName" . }}
+            - secretRef:
+                name: {{ include "seamware-ckan.appSecretName" . }}
+          resources:
+            {{- toYaml .Values.workers.gatherConsumer.resources | nindent 12 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-fetch-consumer" (include "seamware-ckan.fullname" .) | trunc 63 | trimSuffix "-" }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+    app.kubernetes.io/component: fetch-consumer
+spec:
+  replicas: {{ .Values.workers.fetchConsumer.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "seamware-ckan.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: fetch-consumer
+  template:
+    metadata:
+      labels:
+        {{- include "seamware-ckan.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: fetch-consumer
+      {{- with .Values.workers.fetchConsumer.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- include "seamware-ckan.imagePullSecrets" . | nindent 6 }}
+      initContainers:
+        - name: wait-for-ckan
+          image: {{ printf "%s:%s" .Values.busyboxImage.repository .Values.busyboxImage.tag | quote }}
+          imagePullPolicy: {{ .Values.busyboxImage.pullPolicy }}
+          command:
+            - sh
+            - -ec
+            - |
+              until wget -qO /dev/null http://{{ include "seamware-ckan.webName" . }}:{{ .Values.service.port }}/; do sleep 2; done
+      containers:
+        - name: fetch-consumer
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - bash
+            - -lc
+            - ckan -c /srv/app/ckan.ini harvester fetch-consumer
+          envFrom:
+            - configMapRef:
+                name: {{ include "seamware-ckan.appConfigMapName" . }}
+            - secretRef:
+                name: {{ include "seamware-ckan.appSecretName" . }}
+          resources:
+            {{- toYaml .Values.workers.fetchConsumer.resources | nindent 12 }}

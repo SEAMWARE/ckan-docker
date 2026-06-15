@@ -1,0 +1,63 @@
+{{- if .Values.solr.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "seamware-ckan.solr.name" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+    app.kubernetes.io/component: solr
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "seamware-ckan.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: solr
+  template:
+    metadata:
+      labels:
+        {{- include "seamware-ckan.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: solr
+      {{- with .Values.solr.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+        - name: solr
+          image: {{ printf "%s:%s" .Values.solr.image.repository .Values.solr.image.tag | quote }}
+          imagePullPolicy: {{ .Values.solr.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8983
+          volumeMounts:
+            - name: data
+              mountPath: /var/solr
+          livenessProbe:
+            httpGet:
+              path: /solr/
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /solr/
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            {{- toYaml .Values.solr.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.solr.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "seamware-ckan.solrStorageClaimName" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

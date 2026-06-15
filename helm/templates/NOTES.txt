@@ -1,0 +1,21 @@
+1. Access the CKAN web service:
+{{- if .Values.ingress.enabled }}
+  {{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+  {{- end }}
+{{- else }}
+  kubectl port-forward svc/{{ include "seamware-ckan.webName" . }} 5000:{{ .Values.service.port }}
+  Then open http://127.0.0.1:5000
+{{- end }}
+
+2. Review and override the placeholder secrets before using this in a shared or public environment:
+  - ckan.security.beakerSessionSecret
+  - ckan.security.apiTokenJwtEncodeSecret
+  - ckan.security.apiTokenJwtDecodeSecret
+  - ckan.oidc4vc.clientSecret
+  - ckan.sysadmin.password
+  - postgresql.auth.password
+
+3. The chart deploys the two CKAN harvester consumers separately:
+  - {{ printf "%s-gather-consumer" (include "seamware-ckan.fullname" .) | trunc 63 | trimSuffix "-" }}
+  - {{ printf "%s-fetch-consumer" (include "seamware-ckan.fullname" .) | trunc 63 | trimSuffix "-" }}

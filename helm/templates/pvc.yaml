@@ -1,0 +1,53 @@
+{{- if and .Values.web.storage.enabled (not .Values.web.storage.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "seamware-ckan.webStorageClaimName" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.web.storage.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.web.storage.size | quote }}
+  {{- with .Values.web.storage.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}
+---
+{{- if and .Values.postgresql.enabled .Values.postgresql.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "seamware-ckan.postgresqlStorageClaimName" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.postgresql.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.postgresql.persistence.size | quote }}
+  {{- with .Values.postgresql.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}
+---
+{{- if and .Values.solr.enabled .Values.solr.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "seamware-ckan.solrStorageClaimName" . }}
+  labels:
+    {{- include "seamware-ckan.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.solr.persistence.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.solr.persistence.size | quote }}
+  {{- with .Values.solr.persistence.storageClass }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+{{- end }}
