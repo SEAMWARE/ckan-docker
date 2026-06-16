@@ -10,8 +10,9 @@ ARG CKANEXT_DCAT_REF=v2.4.3
 ARG CKANEXT_OIDC4VC_REF=main
 ARG CKANEXT_TMFORUM_REF=main
 ARG CKANEXT_DSIF_REF=main
+ARG CKANEXT_NGSILD_REF=main
 
-ENV CKAN__PLUGINS="image_view text_view datatables_view datastore scheming_datasets scheming_groups scheming_organizations harvest dcat oidc4vc tmforum dsif envvars" \
+ENV CKAN__PLUGINS="image_view text_view datatables_view datastore scheming_datasets scheming_groups scheming_organizations harvest dcat oidc4vc tmforum dsif ngsild envvars" \
     CKAN___SCHEMING__DATASET_SCHEMAS="ckanext.dcat.schemas:dcat_ap_recommended.yaml" \
     CKAN___SCHEMING__PRESETS="ckanext.scheming:presets.json ckanext.dcat.schemas:presets.yaml" \
     CKANEXT_DSIF_CATALOG_ID="ic-001" \
@@ -44,7 +45,8 @@ RUN rm -rf "${APP_DIR}/src/ckanext-envvars" \
            "${APP_DIR}/src/ckanext-dcat" \
            "${APP_DIR}/src/ckanext-oidc4vc" \
            "${APP_DIR}/src/ckanext-tmforum" \
-           "${APP_DIR}/src/ckanext-dsif" && \
+           "${APP_DIR}/src/ckanext-dsif" \
+           "${APP_DIR}/src/ckanext-ngsild" && \
     pip install -e "git+https://github.com/ckan/ckanext-envvars.git@${CKANEXT_ENVVARS_REF}#egg=ckanext-envvars" && \
     pip install -e "git+https://github.com/ckan/ckanext-harvest.git@${CKANEXT_HARVEST_REF}#egg=ckanext-harvest" && \
     pip install -r "${APP_DIR}/src/ckanext-harvest/pip-requirements.txt" && \
@@ -56,6 +58,8 @@ RUN rm -rf "${APP_DIR}/src/ckanext-envvars" \
     pip install -e "git+https://github.com/SEAMWARE/ckanext-tmforum.git@${CKANEXT_TMFORUM_REF}#egg=ckanext-tmforum" && \
     pip install -r "${APP_DIR}/src/ckanext-tmforum/requirements.txt" && \
     pip install -e "git+https://github.com/SEAMWARE/ckanext-dsif.git@${CKANEXT_DSIF_REF}#egg=ckanext-dsif" && \
-    pip install -r "${APP_DIR}/src/ckanext-dsif/requirements.txt"
+    pip install -r "${APP_DIR}/src/ckanext-dsif/requirements.txt" && \
+    pip install -e "git+https://github.com/SEAMWARE/ckanext-ngsild.git@${CKANEXT_NGSILD_REF}#egg=ckanext-ngsild" && \
+    pip install -r "${APP_DIR}/src/ckanext-ngsild/requirements.txt"
 
 USER ckan

@@ -18,8 +18,7 @@ SEAMWARE extensions installed during build:
 - `ckanext-oidc4vc`
 - `ckanext-tmforum`
 - `ckanext-dsif`
-
-`ckanext-ngsild` is not installed by this standalone image. The plugin is available in the main workspace, but this sub-repo only pulls extensions from public Git repositories.
+- `ckanext-ngsild`
 
 ## Default configuration baked into the image
 
@@ -50,6 +49,7 @@ docker build \
   --build-arg CKANEXT_DCAT_REF=v2.4.3 \
   --build-arg CKANEXT_OIDC4VC_REF=main \
   --build-arg CKANEXT_TMFORUM_REF=main \
+  --build-arg CKANEXT_NGSILD_REF=main \
   --build-arg CKANEXT_DSIF_REF=main \
   -t seamware/ckan:2.11-custom .
 ```

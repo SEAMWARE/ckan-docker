@@ -73,7 +73,7 @@ ckan:
   siteId: default
   siteUrl: http://127.0.0.1:5000
   maxUploadSizeMb: 100
-  plugins: image_view text_view datatables_view datastore scheming_datasets scheming_groups scheming_organizations harvest dcat oidc4vc tmforum dsif envvars
+  plugins: image_view text_view datatables_view datastore scheming_datasets scheming_groups scheming_organizations harvest dcat oidc4vc tmforum dsif ngsild envvars
   scheming:
     datasetSchemas: ckanext.dcat.schemas:dcat_ap_recommended.yaml
     presets: ckanext.scheming:presets.json ckanext.dcat.schemas:presets.yaml
